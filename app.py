@@ -39,13 +39,13 @@ session.close()
 def index():
     #Available Api's
     return (f"Available Routes:<br/><hr>"
-        f"<a href='/api/v0.1/precipitation'>Precipitation<br/>"
-        f"<a href='/api/v0.1/stations'>Available Stations<br/>"
-        f"<a href='/api/v0.1/tobs'>Temperature at the time of observation<br/>"
-        f"<a href='/api/v0.1/start'>Start date temperature<br/>"
-        f"<a href='/api/v0.1/start-end'>End date temperature<br/>")
+        f"<a href='/api/v1.0/precipitation'>Precipitation<br/>"
+        f"<a href='/api/v1.0/stations'>Available Stations<br/>"
+        f"<a href='/api/v1.0/tobs'>Temperature at the time of observation<br/>"
+        f"<a href='/api/v1.0/start'>Start date temperature<br/>"
+        f"<a href='/api/v1.0/start-end'>End date temperature<br/>")
 
-@app.route("/api/v0.1/precipitation")
+@app.route("/api/v1.0/precipitation")
 def precipitation():
     # Session link to db
     session = Session(engine)
@@ -66,7 +66,7 @@ def precipitation():
     # Return dictionary as JSON
     return jsonify(precipitation_dict)
 
-@app.route("/api/v0.1/stations")
+@app.route("/api/v1.0/stations")
 def stations():
     # Session link to db
     session = Session(engine)
@@ -86,7 +86,7 @@ def stations():
 
     return jsonify(all_stations)
 
-@app.route("/api/v0.1/tobs")
+@app.route("/api/v1.0/tobs")
 def tobs():
     # Session link to db
     session = Session(engine)
@@ -110,10 +110,35 @@ def tobs():
         row['date'] = date
         row['tobs'] = tobs
         tobs_dict.append(row)
+
     return jsonify(tobs_dict)
 
-#@app.route("/api/v0.1/start")
-#@app.route("/api/v0.1/start-end")
+
+@app.route("/api/v1.0/<start>")
+def start(start):
+    # Session link to db
+    session = Session(engine)
+
+    # Return a JSON list of the min,max,ave temperature for a given start or start-end range.
+    starter = session.query(func.min(Measurement.tobs),\
+        func.avg(Measurement.tobs), func.max(Measurement.tobs))\
+        .filter(Measurement.date >= start).all()
+
+    session.close()
+
+    # Store start data in dict
+    start_dict = []
+    for min, avg, max in starter:
+        row = {}
+        row["min"] = min
+        row["avg"] = avg
+        row["max"] = max
+        start_dict.append(row)
+    
+    return jsonify(start_dict)
+
+#@app.route("/api/v1.0/start-end")
+
 
 if __name__ == '__main__':
     app.run(debug=True)
