@@ -137,8 +137,14 @@ def start(start):
     
     return jsonify(start_dict)
 
-#@app.route("/api/v1.0/start-end")
-
+@app.route("/api/v1.0/start-end")
+def start_end(start, end):
+   # Return a JSON list of the min,max,ave temperature for a given start or start-end range.
+    start_end = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs),
+                                  func.max(Measurement.tobs)).filter(Measurement.date >= start).filter(
+        Measurement.date <= end).group_by(Measurement.date).all()
+    start_end_l = list(start_end)
+    return jsonify(start_end_l)
 
 if __name__ == '__main__':
     app.run(debug=True)
