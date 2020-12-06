@@ -1,5 +1,5 @@
-#Import dependencies
-
+# Import dependencies
+from datetime import datetime
 import numpy as np
 
 import sqlalchemy
@@ -24,6 +24,15 @@ Station = Base.classes.station
 # Flask Setup
 app = Flask(__name__)
 
+session = Session(engine)
+# Entry of the last date
+date_eof = session.query(Measurement.date).order_by(
+    Measurement.date.desc()).first()
+# A year before last entry
+previous_year = dt.datetime.strptime(
+    date_eof[0], '%Y-%m-%d') - dt.timedelta(days=365)
+session.close()
+
 # Flask Routes
 
 @app.route("/")
@@ -38,17 +47,13 @@ def index():
 
 @app.route("/api/v0.1/precipitation")
 def precipitation():
-    # Link to db
+    # Session link to db
     session = Session(engine)
-
-    # Entry of the last date
-    date_eof = session.query(Measurement.date).order_by(
-        Measurement.date.desc()).first()
-    # A year before last entry
-    previous_year = datetime.strptime(date_eof[0], '%Y-%m-%d') - dt.timedelta(days=365)
 
     # Precipitation query for the last year
     precip_last_year = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date > previous_year).all()
+
+    session.close()
 
     # Store results in dictionary
     precipitation_dict = []
@@ -57,17 +62,19 @@ def precipitation():
         row['date'] = date
         row['prcp'] = prcp
         precipitation_dict.append(row)
-    
+
     # Return dictionary as JSON
     return jsonify(precipitation_dict)
 
 @app.route("/api/v0.1/stations")
 def stations():
-    # Link to db
+    # Session link to db
     session = Session(engine)
 
     # Query all stations
     results = session.query(Station.station, Station.name).all()
+
+    session.close()
 
     # Store results in dictionary
     all_stations = []
@@ -79,7 +86,32 @@ def stations():
 
     return jsonify(all_stations)
 
-#@app.route("/api/v0.1/tobs")
+@app.route("/api/v0.1/tobs")
+def tobs():
+    # Session link to db
+    session = Session(engine)
+
+    # Query the highest tobs station
+    most_active = session.query(Station.station, func.count(Station.station)).\
+        group_by(Station.station).\
+        order_by(func.count(Station.station).desc()).first()[0]
+    
+    # Using the station id from the previous query, calculate the lowest temperature recorded,
+    # highest temperature recorded, and average temperature of the most active station?
+    results = session.query(Measurement.station, Measurement.date, Measurement.tobs)\
+        .filter(Measurement.station == most_active)\
+        .filter(Measurement.date >= previous_year).all()
+    session.close()
+    # Store results in dictionary
+    tobs_dict = []
+    for station, date,tobs in results:
+        row = {}
+        row['station'] = station
+        row['date'] = date
+        row['tobs'] = tobs
+        tobs_dict.append(row)
+    return jsonify(tobs_dict)
+
 #@app.route("/api/v0.1/start")
 #@app.route("/api/v0.1/start-end")
 
