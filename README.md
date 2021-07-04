@@ -2,12 +2,12 @@
 This project displays earthquakes recorded by the USGS over the past week on and interactive map.
 
 #### Technology
--Python
--Pandas
--Matplotlib
--Flask
--SQLAlchemy
--Jupyter Notebook
+*Python
+*Pandas
+*Matplotlib
+*Flask
+*SQLAlchemy
+*Jupyter Notebook
 
 ## Step 1 - Climate Analysis and Exploration
 
